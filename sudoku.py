@@ -4,10 +4,11 @@ from time import sleep
 from random import randint
 
 class sudoku():
-    def __init__(self,win,x,y):
+    def __init__(self,win,x,y,width,height):
         self.win = win
         self.rel_x = x
         self.rel_y = y
+        self.rect = pygame.Rect(x,y,width,height)
         self.animation_grid = [[self.rel_x,self.rel_y]]
         self.grid = {i:{j:{"value":0,"lock":False} for j in range(9)}for i in range(9)}
         self.head = 0

@@ -8,14 +8,14 @@ pygame.init()
 width,height = 1200,600
 
 win = pygame.display.set_mode((width,height))
-pygame.display.set_caption("   SUDOKU   ")
+pygame.display.set_caption("   SUDOKU - SCANNER   ")
 
 clock = pygame.time.Clock()
 
 fps = 60
 
 image_section_window = image_section(win,700,100,600,600)
-sudoku_window = sudoku(win,50,100)
+sudoku_window = sudoku(win,50,100,450,450)
 
 buttons = []
 buttons.append(button(50,30,"comicsans",20,"**SOLVE**",(0,0,0)))
@@ -40,6 +40,13 @@ while not pygame.event.get(pygame.QUIT):
         elif buttons[4].rect.collidepoint(mouse_click[0].pos) and image_section_window.image:
             image_section_window.feed_image()
             sudoku_window.grid = image_section_window.digit_dict
+        elif sudoku_window.rect.collidepoint(mouse_click[0].pos) and sudoku_window.start:
+            x_off, y_off = mouse_click[0].pos
+            x_off = x_off//50-1; y_off = y_off//50-2
+            digit = sudoku_window.grid[y_off][x_off]['value']
+            if digit < 9 and mouse_click[0].button == 3: sudoku_window.grid[y_off][x_off] = {'value':digit+1,'lock':True}
+            elif digit > 1 and mouse_click[0].button == 1: sudoku_window.grid[y_off][x_off] = {'value':digit-1,'lock':True}
+            elif mouse_click[0].button == 1: sudoku_window.grid[y_off][x_off] = {'value':0,'lock':False}
 
     win.fill((230,230,230))
 
