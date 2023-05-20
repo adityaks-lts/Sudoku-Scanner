@@ -1,62 +1,49 @@
-import pygame
+from pygame import transform, image, Rect
 from tkinter.filedialog import askopenfile
-import os
-
-class button():
-    def __init__(self,x,y,font,font_size,text,foreground_color,background_color=None):
-        try:
-            self.surf = pygame.font.SysFont(font,font_size,True).render(text,True,foreground_color,)
-            self.rect = self.surf.get_rect(topleft=(x,y))
-        except Exception as e:
-            print(e)
-    
-    def draw(self,win):
-        pygame.draw.rect(win,(130,150,130),self.rect,2,8)
-        win.blit(self.surf,self.rect)
+from os import getcwd
+from keras.models import load_model
+from numpy import mat, uint8, argmax
+from math import ceil, sqrt
+import cv2
 
 class image_section():
     def __init__(self,win,x,y,width,height):
         self.win = win
-        self.first = True
-        self.surface = pygame.Surface((width,height))
-        self.rect = self.surface.get_rect(topleft=(x,y))
-        self.browse_button = button(40,10,"comicsans",20,"***CHOOSE IMAGE***",(0,0,0))
-        self.feed_button = button(width//2+60,10,"comicsans",20,"***FEED IMAGE***",(0,0,0))
-        self.surface.fill((250,250,250))
+        self.rect = Rect(x,y,width,height)
         self.image = None
+        self.image_surface = None
+        self.digit_dict = None
+        self.file_types = [("png",".png"),("jpeg",[".jpeg",".jpg"])]
+        print("loading model.....")
+        self.ocr_model = load_model("basic_model")
+        print("model loaded preceeding !!")
     
     def grab_image(self):
-        temp = askopenfile('rb',defaultextension = '.png',filetypes = [("png",".png"),("jpeg",[".jpeg",".jpg"])],initialdir=os.getcwd(),title="select image file ")
-        if temp:
-            self.image = temp
-            self.image = pygame.transform.smoothscale(pygame.image.load(self.image).convert_alpha(),(450,450))
-            self.first = True
+        if temp := askopenfile('rb',defaultextension = '.png',filetypes = self.file_types,initialdir=getcwd(),title="select image file "):
+            self.image = temp.name
+            self.image_surface = transform.smoothscale(image.load(self.image).convert_alpha(),(450,450))
+
+    def process_image(self,image):
+        contours ,_ = cv2.findContours(image,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        image = image/255
+        for contour in contours:
+            x,y,w,h = cv2.boundingRect(contour)
+            if int(sqrt((w)**2+(h)**2)) in range(30,50):
+                x_off = 30-w;y_off = 30-h
+                x-=ceil(x_off/2);y-=ceil(y_off/2);w+=x_off;h+=y_off
+                tst_img = image[y:y+h,x:x+w].reshape((1,900))
+                txt = argmax(self.ocr_model.predict(tst_img))
+                self.digit_dict[y//50][x//50] = {'value':txt,'lock':True}
 
     def feed_image(self):
-        if self.image:
-            print("***feed***")
+        self.digit_dict = {i:{j:{'value':0,"lock":False} for j in range(9)} for i in range(9)}
+        img_mat = cv2.resize(cv2.imread(self.image,cv2.IMREAD_GRAYSCALE),(450,450))
+        _, img_mat = cv2.threshold(img_mat,0,255,cv2.THRESH_BINARY|cv2.THRESH_OTSU)
+        img_mat = cv2.erode(img_mat,mat([[0,1,0],[1,1,1],[0,1,0]],dtype=uint8),iterations=1)
+        self.process_image(img_mat)
 
     def draw(self):
-        self.win.blit(self.surface,self.rect)
-        m_x,m_y = pygame.mouse.get_pos()
-        if self.rect.collidepoint((m_x,m_y)) or self.first:
-            self.first = False
+        if self.image: self.win.blit(self.image_surface,self.rect)
 
-            m_x-=self.rect.x
-            m_y-=self.rect.y
-
-            self.surface.fill((250,250,250))
-
-            self.browse_button.draw(self.surface)
-            self.feed_button.draw(self.surface)
-
-            if self.image: self.surface.blit(self.image,(50,50))
-
-            keys = pygame.mouse.get_pressed()
-            
-            if keys:
-                if self.browse_button.rect.collidepoint((m_x,m_y)) and keys[0]:
-                    self.grab_image()
-
-                elif self.feed_button.rect.collidepoint((m_x,m_y)) and keys[0]:
-                    self.feed_image()
+    def run(self):
+        self.draw()
