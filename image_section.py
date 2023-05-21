@@ -37,7 +37,14 @@ class image_section():
 
     def feed_image(self):
         self.digit_dict = {i:{j:{'value':0,"lock":False} for j in range(9)} for i in range(9)}
-        img_mat = cv2.resize(cv2.imread(self.image,cv2.IMREAD_GRAYSCALE),(450,450))
+        img_mat = cv2.imread(self.image,cv2.IMREAD_GRAYSCALE)
+        _, img = cv2.threshold(img_mat,0,255,cv2.THRESH_BINARY|cv2.THRESH_OTSU)
+        contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        print(len(contours))
+        contours = sorted(contours,key=cv2.contourArea,reverse=True)
+        x,y,w,h = cv2.boundingRect(contours[1])
+        if w > 200 and h > 200: img_mat = img_mat[y:y+h,x:x+w]
+        img_mat = cv2.resize(img_mat,(450,450))
         _, img_mat = cv2.threshold(img_mat,0,255,cv2.THRESH_BINARY|cv2.THRESH_OTSU)
         img_mat = cv2.erode(img_mat,mat([[0,1,0],[1,1,1],[0,1,0]],dtype=uint8),iterations=1)
         self.process_image(img_mat)
