@@ -16,7 +16,8 @@ class sudoku():
         self.current_cell = (self.rel_x,self.rel_y)
         self.is_solved = False
         self.delay = 0.00001
-        self.line_coords = []
+        self.is_error = False
+        self.error_surf = self.draw_text('  Given Sudoku is Unsolvable!!  ',(200,0,0))
 
         Thread(target=self.animation,daemon=True).start()
         self.solve_thread = None
@@ -79,7 +80,32 @@ class sudoku():
     def draw_text(self,txt,color=(0,0,0)):
         return pygame.font.SysFont("comicsans",20,True).render(txt,True,color)
 
+    def is_solvable(self,grid):
+        for i in range(9):
+            for j in range(9):
+                if grid[i][j]["value"] != 0:
+                    for x in range(len(grid[i])):
+                        if x != j and grid[i][x]["value"] == grid[i][j]["value"]:   
+                            return False
+                    for y in range(len(grid[j])):
+                        if y != i and grid[y][j]["value"] == grid[i][j]["value"]:   
+                            return False
+            subgrid_nums = []
+            start_row = (i // 3) * 3
+            start_col = (i % 3) * 3
+            for x in range(start_row, start_row + 3):
+                for y in range(start_col, start_col + 3):
+                    if grid[x][y]["value"] != 0:
+                        if grid[x][y]["value"] in subgrid_nums:
+                            return False
+                        subgrid_nums.append(grid[x][y]["value"])
+        return True
+    
     def create_solve_thread(self):
+        self.is_error = False
+        if not self.is_solvable(self.grid):
+            self.is_error = True
+            return
         if self.start:
             self.is_solved=False
             self.start=False
@@ -100,12 +126,20 @@ class sudoku():
             if self.grid[key_y][key_x]["lock"]: self.win.blit(self.draw_text(f'{self.grid[key_y][key_x]["value"]}'),(pos[0]+20,pos[1]+10))
             else: self.win.blit(self.draw_text(f'{self.grid[key_y][key_x]["value"]}',(0,200,0)),(pos[0]+20,pos[1]+10))
 
+        if self.is_error: self.win.blit(self.error_surf,(100,560))
+
+
     def reset(self):
-        if self.solve_thread and self.solve_thread.is_alive(): self.solve_thread.kill()
-        pass
+        self.grid = {i:{j:{"value":0,"lock":False} for j in range(9)}for i in range(9)}
+        self.current_cell = (self.rel_x,self.rel_y)
+        self.animation_grid.clear()
+        self.animation_grid.append([self.rel_x,self.rel_y])
+        self.head = 0
+        self.is_error = False
 
     def gen_puzzel(self):
         board = {i:{j:{'value':0,'lock':True} for j in range(9)} for i in range(9)}
+        board[randint(0,8)][randint(0,8)]['value'] = randint(1,9)
         self.is_solved = False
         self.solve(board,0,True)
         for _ in range(40):
