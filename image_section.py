@@ -40,7 +40,6 @@ class image_section():
         img_mat = cv2.imread(self.image,cv2.IMREAD_GRAYSCALE)
         _, img = cv2.threshold(img_mat,0,255,cv2.THRESH_BINARY|cv2.THRESH_OTSU)
         contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        print(len(contours))
         contours = sorted(contours,key=cv2.contourArea,reverse=True)
         x,y,w,h = cv2.boundingRect(contours[1])
         if w > 200 and h > 200: img_mat = img_mat[y:y+h,x:x+w]

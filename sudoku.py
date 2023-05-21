@@ -17,7 +17,7 @@ class sudoku():
         self.is_solved = False
         self.delay = 0.00001
         self.is_error = False
-        self.error_surf = self.draw_text('  Given Sudoku is Unsolvable!!  ')
+        self.error_surf = self.draw_text('  Given Sudoku is Unsolvable!!  ',(200,0,0))
 
         Thread(target=self.animation,daemon=True).start()
         self.solve_thread = None
@@ -100,8 +100,12 @@ class sudoku():
                             return False
                         subgrid_nums.append(grid[x][y]["value"])
         return True
-    
+
     def create_solve_thread(self):
+        self.is_error = False
+        if not self.is_solvable(self.grid):
+            self.is_error = True
+            return
         self.is_error = False
         if not self.is_solvable(self.grid):
             self.is_error = True
@@ -126,7 +130,7 @@ class sudoku():
             if self.grid[key_y][key_x]["lock"]: self.win.blit(self.draw_text(f'{self.grid[key_y][key_x]["value"]}'),(pos[0]+20,pos[1]+10))
             else: self.win.blit(self.draw_text(f'{self.grid[key_y][key_x]["value"]}',(0,200,0)),(pos[0]+20,pos[1]+10))
 
-        if self.is_error: self.win.blit(self.error_surf,(100,600))
+        if self.is_error: self.win.blit(self.error_surf,(100,560))
 
     def reset(self):
         self.grid = {i:{j:{"value":0,"lock":False} for j in range(9)}for i in range(9)}
@@ -138,6 +142,7 @@ class sudoku():
 
     def gen_puzzel(self):
         board = {i:{j:{'value':0,'lock':True} for j in range(9)} for i in range(9)}
+        board[randint(0,8)][randint(0,8)]['value'] = randint(1,9)
         self.is_solved = False
         self.solve(board,0,True)
         for _ in range(40):
