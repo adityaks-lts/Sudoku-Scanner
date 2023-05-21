@@ -4,10 +4,11 @@ from time import sleep
 from random import randint
 
 class sudoku():
-    def __init__(self,win,x,y,width,height):
+    def __init__(self,win,x,y,width,height,width,height):
         self.win = win
         self.rel_x = x
         self.rel_y = y
+        self.rect = pygame.Rect(x,y,width,height)
         self.rect = pygame.Rect(x,y,width,height)
         self.animation_grid = [[self.rel_x,self.rel_y]]
         self.grid = {i:{j:{"value":0,"lock":False} for j in range(9)}for i in range(9)}
@@ -101,7 +102,32 @@ class sudoku():
                         subgrid_nums.append(grid[x][y]["value"])
         return True
     
+    def is_solvable(self,grid):
+        for i in range(9):
+            for j in range(9):
+                if grid[i][j]["value"] != 0:
+                    for x in range(len(grid[i])):
+                        if x != j and grid[i][x]["value"] == grid[i][j]["value"]:   
+                            return False
+                    for y in range(len(grid[j])):
+                        if y != i and grid[y][j]["value"] == grid[i][j]["value"]:   
+                            return False
+            subgrid_nums = []
+            start_row = (i // 3) * 3
+            start_col = (i % 3) * 3
+            for x in range(start_row, start_row + 3):
+                for y in range(start_col, start_col + 3):
+                    if grid[x][y]["value"] != 0:
+                        if grid[x][y]["value"] in subgrid_nums:
+                            return False
+                        subgrid_nums.append(grid[x][y]["value"])
+        return True
+    
     def create_solve_thread(self):
+        self.is_error = False
+        if not self.is_solvable(self.grid):
+            self.is_error = True
+            return
         self.is_error = False
         if not self.is_solvable(self.grid):
             self.is_error = True
@@ -118,7 +144,7 @@ class sudoku():
             for i in range(1,3):
                 pygame.draw.line(self.win,(20,20,20),(self.rel_x+150*i-1,self.rel_y),(self.rel_x+150*i-1,self.rel_y+450),4)
                 pygame.draw.line(self.win,(20,20,20),(self.rel_x,self.rel_y+150*i-1),(self.rel_x+450,self.rel_y+150*i-1),4)
-        
+
         for pos in self.animation_grid:
             key_y,key_x = pos[1]//50-2,pos[0]//50-1
             pygame.draw.rect(self.win,(0,0,0),(pos[0],pos[1],50,50),1,5)

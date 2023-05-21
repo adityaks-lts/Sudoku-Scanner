@@ -5,7 +5,7 @@ from button import button
 
 pygame.init()
 
-width,height = 1200,600
+width,height = 1200,680
 
 win = pygame.display.set_mode((width,height))
 pygame.display.set_caption("   SUDOKU - SCANNER   ")
